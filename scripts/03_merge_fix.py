@@ -16,8 +16,12 @@ SOURCE_DIR = ROOT / "source"
 LICENSE_PATH = ROOT / "LICENSE.txt"
 
 FONT_NAME = "serein"
-VERSION = "0.900"
+VERSION = "0.901"
 VENDOR = "TWR"  # 任意のベンダー4文字コード
+
+# 行間（上下）をほんの少しだけ広げるための追加量。em=2048 に対する絶対値で、
+# 上下（ascent/descent）それぞれに加算する。0 で無効。
+LINE_SPACING_EXTRA = 40
 
 # style -> (subfamily名, bold?, italic?, fsSelectionビット, macStyleビット)
 STYLES = {
@@ -56,6 +60,7 @@ def main():
         fix_os2(merged, meta)
         fix_post(merged)
         fix_head(merged, meta)
+        fix_vertical_metrics(merged)
         fix_name(merged, style, meta)
 
         out_path = DIST_DIR / f"{FONT_NAME}-{style}.ttf"
@@ -131,6 +136,27 @@ def fix_head(font, meta):
     if meta["italic"]:
         mac_style |= 1 << 1
     head.macStyle = mac_style
+
+
+def fix_vertical_metrics(font):
+    """行の上下にほんの少しだけ余白を足す（グリフ自体の大きさ・位置は変えない）。
+
+    lineGap ではなく ascent/descent 側を広げているのは、lineGap を無視して
+    ascent+descent だけを行の高さとして扱うアプリ・ターミナルが多いため。
+    """
+    extra = LINE_SPACING_EXTRA
+    if extra == 0:
+        return
+
+    hhea = font["hhea"]
+    os2 = font["OS/2"]
+
+    hhea.ascent += extra
+    hhea.descent -= extra
+    os2.sTypoAscender += extra
+    os2.sTypoDescender -= extra
+    os2.usWinAscent += extra
+    os2.usWinDescent += extra
 
 
 def fix_name(font, style, meta):
