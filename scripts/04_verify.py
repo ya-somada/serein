@@ -54,11 +54,15 @@ def verify_style(style, jp_style):
         name = font["name"]
         for platform, encoding, language in ((3, 1, 0x409), (1, 0, 0)):
             records = {}
-            for name_id in (0, 1, 13, 14):
+            for name_id in (0, 1, 5, 13, 14):
                 record = name.getName(name_id, platform, encoding, language)
                 require(record is not None, f"{style}: missing name ID {name_id}")
                 records[name_id] = record.toUnicode()
             require(records[1] == "serein", f"{style}: incorrect family name")
+            require(records[5].startswith("Version "), f"{style}: missing version string")
+            version = float(records[5].split(" ", 1)[1])
+            require(abs(font["head"].fontRevision - version) < 1 / 65536,
+                    f"{style}: head and name versions differ")
             for family in ("CascadiaMono", "NotoSansJP"):
                 notice = (ROOT / "source" / family / "OFL.txt").read_text(
                     encoding="utf-8"

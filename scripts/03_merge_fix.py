@@ -16,7 +16,7 @@ SOURCE_DIR = ROOT / "source"
 LICENSE_PATH = ROOT / "LICENSE.txt"
 
 FONT_NAME = "serein"
-VERSION = "1.000"
+VERSION = "0.900"
 VENDOR = "TWR"  # 任意のベンダー4文字コード
 
 # style -> (subfamily名, bold?, italic?, fsSelectionビット, macStyleビット)
@@ -124,6 +124,7 @@ def fix_post(font):
 
 def fix_head(font, meta):
     head = font["head"]
+    head.fontRevision = float(VERSION)
     mac_style = 0
     if meta["bold"]:
         mac_style |= 1 << 0
