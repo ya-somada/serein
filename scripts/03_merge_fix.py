@@ -16,7 +16,7 @@ SOURCE_DIR = ROOT / "source"
 LICENSE_PATH = ROOT / "LICENSE.txt"
 
 FONT_NAME = "serein"
-VERSION = "0.901"
+VERSION = "0.902"
 VENDOR = "TWR"  # 任意のベンダー4文字コード
 
 # 行間（上下）をほんの少しだけ広げるための追加量。em=2048 に対する絶対値で、

@@ -104,33 +104,41 @@ def _round_contour(contour, radius, angle_threshold_deg):
             k = (k + 1) % n
         return out
 
-    nc = fontforge.contour()
-    nc.is_quadratic = True
-    nc.closed = True
-
+    # 新しい輪郭の点列を先に組み立てる（on/off, x, y）。
+    # pen プロトコル (moveTo/lineTo/quadraticTo) で構築すると、始点に戻って
+    # 閉じる最後の点が「重複したオンカーブ点」として余分に残ってしまい、
+    # 結果として長さ0の閉じ辺ができて selfIntersects() が誤検出される問題があった。
+    # そのため、元の輪郭と同じ「始点を末尾で繰り返さない」点列を直接組み立てる。
     start_i = on_indices[0]
-    sx, sy = start_point(start_i)
-    nc.moveTo(sx, sy)
+    waypoints = [(True, start_point(start_i))]
 
     m = len(on_indices)
     for k in range(m):
         i = on_indices[k]
         nxt = on_indices[(k + 1) % m]
         ctrl_pts = between(i, nxt)
-        ex, ey = end_point(nxt)
 
-        if len(ctrl_pts) == 0:
-            nc.lineTo(ex, ey)
-        elif len(ctrl_pts) == 1:
-            c = ctrl_pts[0]
-            nc.quadraticTo(c.x, c.y, ex, ey)
-        else:
+        if len(ctrl_pts) > 1:
             # 想定外（オフカーブが2点以上連続）の場合は丸めを諦めて元形状を使う
             return None
+        for c in ctrl_pts:
+            waypoints.append((False, (c.x, c.y)))
 
+        waypoints.append((True, end_point(nxt)))
         if nxt in corners:
             p = pts[nxt]
-            bx, by = start_point(nxt)
-            nc.quadraticTo(p.x, p.y, bx, by)
+            waypoints.append((False, (p.x, p.y)))
+            waypoints.append((True, start_point(nxt)))
+
+    # 末尾が始点と同じオンカーブ点で終わっている場合、それは重複なので取り除く
+    # （closed=True にすることで、最後の点から始点への接続は自動的に扱われる）
+    if len(waypoints) > 1 and waypoints[-1] == waypoints[0]:
+        waypoints.pop()
+
+    nc = fontforge.contour()
+    nc.is_quadratic = True
+    for on_curve, (x, y) in waypoints:
+        nc += fontforge.point(x, y, on_curve)
+    nc.closed = True
 
     return nc
